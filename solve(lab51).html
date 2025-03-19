@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+    // 通过prompt获取系数并转换为数字
+    let a = parseFloat(prompt("Enter coefficient a (a>0):"));
+    let b = parseFloat(prompt("Enter coefficient b:"));
+    let c = parseFloat(prompt("Enter coefficient c:"));
+
+    // 计算判别式delta
+    let delta = b * b - 4 * a * c;
+
+    // 计算根x1和x2
+    let x1 = (-b + Math.sqrt(delta)) / (2 * a);
+    let x2 = (-b - Math.sqrt(delta)) / (2 * a);
+
+    alert(`Roots are:\nx1 = ${x1.toFixed(2)}\nx2 = ${x2.toFixed(2)}`);
+
+    // 通过控制台输出结果
+    console.log("Roots:", { x1, x2 });
+</script>
+</body>
+</html>
