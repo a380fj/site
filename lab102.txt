@@ -1,0 +1,23 @@
+onload = sortbyfirstname; 
+
+function sortbyfirstname() {
+
+    let tbl = document.getElementsByTagName('table');
+    
+    let rows = Array.from(tbl.rows);
+    
+    // Sort rows based on the first name (first cell, index 0)
+    rows.sort((a, b) => {
+        let firstNameA = a.cells.innerHTML.toLowerCase();
+        let firstNameB = b.cells.innerHTML.toLowerCase();
+        return firstNameA.localeCompare(firstNameB);
+    });
+
+
+    while (tbl.rows.length > 0) {
+        tbl.deleteRow(0);
+    }
+
+    const tbody = tbl.getElementsByTagName('tbody') || tbl; // Handle tbody if present
+    rows.forEach(row => tbody.appendChild(row));
+}
