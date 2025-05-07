@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>太阳系模型</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: Arial, sans-serif; }
+    canvas { display: block; }
+    #tableContainer {
+      display: none;
+      position: absolute;
+      top: 50px;
+      left: 50px;
+      background: rgb(126, 184, 255);
+      padding: 10px;
+      border-radius: 5px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    table { border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+    th { background: #000000; cursor: pointer; }
+    th:hover { background: #ddd; }
+    #speedInfo {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="solarSystemCanvas"></canvas>
+  <div id="tableContainer"></div>
+  <div id="speedInfo">速度倍数(使用上下键控制): <span id="speedValue">1.0</span></div>
+
+  <script>
+    const canvas = document.getElementById('solarSystemCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const orbitScale = 150;
+
+    let speedMultiplier = 1.0;
+    let zoom = 1.0;
+    const speedDisplay = document.getElementById("speedValue");
+
+    const celestialBodies = [
+      { name: '太阳', mass: 1.989e30, orbitRadius: 0, color: 'yellow', diameter: 69.6, angle: 0, angularSpeed: 0 },
+      { name: '水星', mass: 3.285e23, orbitRadius: 0.39, color: 'gray', diameter: 2.44, angle: 0, angularSpeed: 0.01 / (1 * 0.5) },
+      { name: '金星', mass: 4.867e24, orbitRadius: 0.72, color: 'darkgoldenrod', diameter: 6.052, angle: 0, angularSpeed: 0.01 / (2 * 0.5) },
+      { name: '地球', mass: 5.972e24, orbitRadius: 1.00, color: 'blue', diameter: 6.37, angle: 0, angularSpeed: 0.01 / (3 * 0.5) },
+      { name: '火星', mass: 6.417e23, orbitRadius: 1.52, color: 'red', diameter: 3.39, angle: 0, angularSpeed: 0.01 / (4 * 0.5) },
+      { name: '木星', mass: 1.898e27, orbitRadius: 5.20, color: 'brown', diameter: 69.9, angle: 0, angularSpeed: 0.01 / (5 * 0.5) },
+      { name: '土星', mass: 5.683e26, orbitRadius: 9.58, color: 'peru', diameter: 58.23, angle: 0, angularSpeed: 0.01 / (6 * 0.5) },
+      { name: '天王星', mass: 8.681e25, orbitRadius: 19.22, color: 'lightblue', diameter: 25.36, angle: 0, angularSpeed: 0.01 / (7 * 0.5) },
+      { name: '海王星', mass: 1.024e26, orbitRadius: 30.05, color: 'darkblue', diameter: 24.6, angle: 0, angularSpeed: 0.01 / (8 * 0.5) },
+      { name: '冥王星', mass: 1.309e22, orbitRadius: 39.48, color: 'Chocolate', diameter: 11.18, angle: 0, angularSpeed: 0.01 / (9 * 0.5) }
+    ];
+
+    // Drag support
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false;
+    let lastMouseX = 0, lastMouseY = 0;
+
+    canvas.addEventListener('mousedown', e => {
+      isDragging = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (isDragging) {
+        offsetX += e.clientX - lastMouseX;
+        offsetY += e.clientY - lastMouseY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => isDragging = false);
+    canvas.addEventListener('mouseleave', () => isDragging = false);
+
+    // Speed control
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowUp') {
+        speedMultiplier *= 1.2;
+        updateSpeedDisplay();
+      } else if (e.key === 'ArrowDown') {
+        speedMultiplier /= 1.2;
+        updateSpeedDisplay();
+      }
+    });
+
+    function updateSpeedDisplay() {
+      speedDisplay.textContent = speedMultiplier.toFixed(2);
+    }
+
+    // Zoom control via mouse wheel
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY;
+      if (delta > 0) {
+        zoom *= 0.9;
+      } else {
+        zoom *= 1.1;
+      }
+      zoom = Math.min(Math.max(zoom, 0.2), 5); // Clamp zoom between 0.2 and 5
+    });
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      celestialBodies.forEach(body => {
+        if (body.orbitRadius === 0) {
+          ctx.beginPath();
+          ctx.arc(centerX + offsetX, centerY + offsetY, (body.diameter / 2) * zoom, 0, Math.PI * 2);
+          ctx.fillStyle = body.color;
+          ctx.fill();
+        } else {
+          body.angle += body.angularSpeed * speedMultiplier;
+
+          const orbitRadius = body.orbitRadius * orbitScale * zoom;
+          const x = centerX + offsetX + orbitRadius * Math.cos(body.angle);
+          const y = centerY + offsetY + orbitRadius * Math.sin(body.angle);
+
+          ctx.beginPath();
+          ctx.arc(centerX + offsetX, centerY + offsetY, orbitRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(x, y, (body.diameter / 2) * zoom, 0, Math.PI * 2);
+          ctx.fillStyle = body.color;
+          ctx.fill();
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Table logic
+    let sortColumn = 'name';
+    let sortOrder = 'asc';
+    let tableVisible = false;
+
+    function generateTable() {
+      const tableContainer = document.getElementById('tableContainer');
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trHead = document.createElement('tr');
+      ['name', 'mass', 'orbitRadius', 'color', 'diameter'].forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col === 'name' ? '名称' :
+                         col === 'mass' ? '质量 (KG)' :
+                         col === 'orbitRadius' ? '轨道半径 (AU)' :
+                         col === 'color' ? '颜色' : '直径 (x10^3KM)(同时太阳x10,冥王星x0.1)';
+        th.setAttribute('data-column', col);
+        trHead.appendChild(th);
+      });
+      thead.appendChild(trHead);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      celestialBodies.forEach(body => {
+        const tr = document.createElement('tr');
+        ['name', 'mass', 'orbitRadius', 'color', 'diameter'].forEach(col => {
+          const td = document.createElement('td');
+          td.textContent = body[col];
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      tableContainer.innerHTML = '';
+      tableContainer.appendChild(table);
+
+      table.addEventListener('click', function(e) {
+        if (e.target.tagName === 'TH') {
+          const column = e.target.getAttribute('data-column');
+          if (sortColumn === column) {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortOrder = 'asc';
+          }
+          celestialBodies.sort((a, b) => {
+            let valA = a[column];
+            let valB = b[column];
+            if (typeof valA === 'string') {
+              return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else {
+              return sortOrder === 'asc' ? valA - valB : valB - valA;
+            }
+          });
+          updateTable();
+        }
+      });
+    }
+
+    function updateTable() {
+      const tbody = document.querySelector('#tableContainer table tbody');
+      tbody.innerHTML = '';
+      celestialBodies.forEach(body => {
+        const tr = document.createElement('tr');
+        ['name', 'mass', 'orbitRadius', 'color', 'diameter'].forEach(col => {
+          const td = document.createElement('td');
+          td.textContent = body[col];
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.addEventListener('click', function(e) {
+      const tableContainer = document.getElementById('tableContainer');
+      if (tableContainer.contains(e.target)) return;
+
+      if (tableVisible) {
+        tableContainer.style.display = 'none';
+        tableVisible = false;
+      } else {
+        tableContainer.style.display = 'block';
+        generateTable();
+        tableVisible = true;
+      }
+    });
+  </script>
+</body>
+</html>
